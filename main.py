@@ -1,9 +1,10 @@
-from PyQt6.QtWidgets import *
-from random import *
+import secrets
+import string
 import sys
 
-app = QApplication(sys.argv)
-app.setStyleSheet("""
+from PyQt6.QtWidgets import QApplication, QLabel, QLineEdit, QPushButton, QVBoxLayout, QWidget
+
+STYLE = """
     /* Стилизация всех окон приложения */
     QWidget {
         background-color: #1e1e24;
@@ -57,108 +58,118 @@ app.setStyleSheet("""
         font-size: 13px;
         padding: 4px;
     }
-""")
-
-window = QWidget()
-window.setWindowTitle("Тренировка Авторизации")
-window.show()
-
-layout = QVBoxLayout()
-layout.setSpacing(5)
-
-inp = QLineEdit()
-inp.setPlaceholderText('Логин')
-layout.addWidget(inp)
-
-inp1 = QLineEdit()
-inp1.setPlaceholderText('Пароль')
-layout.addWidget(inp1)
-
-btn_1 = QPushButton('Нажать')
-layout.addWidget(btn_1)
-btn_1.setFixedSize(150, 50)
-
-g_btn = QPushButton("Придумать пароль")
-layout.addWidget(g_btn)
-
-generate_passw = QLabel("")
-layout.addWidget(generate_passw)
-
-ls = ['1', '2', '3', '4', '5', '6', '7', '8', '9']
+"""
 
 
-def generation():
-    log_cur = inp.text()
-    random_chars = "".join(choices(ls, k=4))
-    generate_passw.setText("Скопируй: " + log_cur + random_chars)
-    inp1.setText(log_cur + random_chars)
+def generate_password(login: str, digits: int = 4) -> str:
+    """Логин + случайные цифры. secrets вместо random — результат нельзя предсказать."""
+    return login + "".join(secrets.choice(string.digits) for _ in range(digits))
 
 
-g_btn.clicked.connect(generation)
+class RegisterWindow(QWidget):
+    """Первое окно: придумываем логин и пароль."""
 
-log = ""
-passw = ""
+    def __init__(self):
+        super().__init__()
+        self.setWindowTitle("Тренировка Авторизации")
+        self.login_window = None
+
+        layout = QVBoxLayout(self)
+        layout.setSpacing(5)
+
+        self.login_input = QLineEdit()
+        self.login_input.setPlaceholderText("Логин")
+        layout.addWidget(self.login_input)
+
+        self.password_input = QLineEdit()
+        self.password_input.setPlaceholderText("Пароль")
+        self.password_input.setEchoMode(QLineEdit.EchoMode.Password)
+        layout.addWidget(self.password_input)
+
+        self.submit_btn = QPushButton("Нажать")
+        self.submit_btn.setObjectName("AccentBtn")
+        self.submit_btn.setFixedSize(150, 50)
+        self.submit_btn.clicked.connect(self.on_submit)
+        layout.addWidget(self.submit_btn)
+
+        self.generate_btn = QPushButton("Придумать пароль")
+        self.generate_btn.clicked.connect(self.on_generate)
+        layout.addWidget(self.generate_btn)
+
+        self.status_label = QLabel("")
+        layout.addWidget(self.status_label)
+
+    def on_generate(self):
+        login = self.login_input.text().strip()
+        if not login:
+            self.show_status("Сначала введите логин!", "red")
+            return
+        password = generate_password(login)
+        self.password_input.setText(password)
+        self.show_status("Скопируй: " + password, "#b0b0b5")
+
+    def on_submit(self):
+        login = self.login_input.text().strip()
+        password = self.password_input.text()
+
+        if not login or not password:
+            self.show_status("Заполните все поля!", "red")
+            return
+
+        self.login_window = LoginWindow(login, password)
+        self.login_window.show()
+        self.hide()
+
+    def show_status(self, text: str, color: str):
+        self.status_label.setText(text)
+        self.status_label.setStyleSheet(f"color: {color};")
 
 
-def ckick_btn_on():
-    global log, passw
+class LoginWindow(QWidget):
+    """Второе окно: проверяем, что пользователь запомнил логин и пароль."""
 
-    log = inp.text()
-    passw = inp1.text()
+    def __init__(self, login: str, password: str):
+        super().__init__()
+        self.login = login
+        self.password = password
 
-    if log == "" or passw == "":
-        generate_passw.setText("Заполните все поля!")
-        generate_passw.setStyleSheet("color: red;")
-    else:
-        generate_passw.setText("")
-        ckick_btn()
+        self.setWindowTitle("Авторизация")
+        self.resize(300, 200)
 
+        layout = QVBoxLayout(self)
+        layout.setSpacing(5)
 
-def ckick_btn():
-    global window2
+        self.login_input = QLineEdit()
+        self.login_input.setPlaceholderText("Введите Логин")
+        layout.addWidget(self.login_input)
 
-    window2 = QWidget()
-    window2.setWindowTitle("Авторизация")
-    window2.resize(300, 200)
+        self.password_input = QLineEdit()
+        self.password_input.setPlaceholderText("Введите Пароль")
+        self.password_input.setEchoMode(QLineEdit.EchoMode.Password)
+        self.password_input.returnPressed.connect(self.on_check)
+        layout.addWidget(self.password_input)
 
-    layout2 = QVBoxLayout()
-    layout2.setSpacing(5)
+        self.check_btn = QPushButton("Проверить")
+        self.check_btn.setObjectName("AccentBtn")
+        self.check_btn.setFixedSize(150, 50)
+        self.check_btn.clicked.connect(self.on_check)
+        layout.addWidget(self.check_btn)
 
-    inp2 = QLineEdit()
-    inp2.setPlaceholderText('Введите Логин')
-    layout2.addWidget(inp2)
+        self.result_label = QLabel("")
+        layout.addWidget(self.result_label)
 
-    inp3 = QLineEdit()
-    inp3.setPlaceholderText('Введите Пароль')
-    layout2.addWidget(inp3)
-
-    btn_2 = QPushButton('Проверить')
-    layout2.addWidget(btn_2)
-    btn_2.setFixedSize(150, 50)
-
-    result_label = QLabel("")
-    layout2.addWidget(result_label)
-
-    window2.setLayout(layout2)
-    window2.show()
-
-    window.hide()
-
-    def checking():
-        log2 = inp2.text()
-        passw2 = inp3.text()
-
-        if log2 == log and passw2 == passw:
-            result_label.setText("Верно")
-            result_label.setStyleSheet("color: green;")
+    def on_check(self):
+        if self.login_input.text().strip() == self.login and self.password_input.text() == self.password:
+            self.result_label.setText("Верно")
+            self.result_label.setStyleSheet("color: green;")
         else:
-            result_label.setText("Неверно")
-            result_label.setStyleSheet("color: red;")
-
-    btn_2.clicked.connect(checking)
+            self.result_label.setText("Неверно")
+            self.result_label.setStyleSheet("color: red;")
 
 
-btn_1.clicked.connect(ckick_btn_on)
-
-window.setLayout(layout)
-app.exec()
+if __name__ == "__main__":
+    app = QApplication(sys.argv)
+    app.setStyleSheet(STYLE)
+    window = RegisterWindow()
+    window.show()
+    sys.exit(app.exec())

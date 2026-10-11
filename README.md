@@ -11,13 +11,13 @@
 
 1. Клонируйте репозиторий:
 ```bash
-git clone https://github.com
-cd ИМЯ_РЕПОЗИТОРИЯ
+git clone https://github.com/georgeusaaa/Authorization_check.git
+cd Authorization_check
 ```
 
 2. Установите зависимости:
 ```bash
-pip install PyQt6
+pip install -r requirements.txt
 ```
 
 3. Запустите приложение:
